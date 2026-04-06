@@ -91,6 +91,7 @@ export function PremiumPage() {
     <PremiumReportPage
       premiumView={premiumView}
       engineOutput={engineOutput}
+      auditId={auditId}
       onBack={() => navigate(auditId ? `/audit/${auditId}/summary` : '/')}
     />
   );

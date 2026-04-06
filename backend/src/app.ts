@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import auditsRouter from './routes/audits.js';
 import paymentsRouter from './routes/payments.js';
+import exportsRouter from './routes/exports.js';
 import { handleWebhook } from './controllers/paymentController.js';
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.json());
 
 app.use('/api/audits', auditsRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/audits', exportsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

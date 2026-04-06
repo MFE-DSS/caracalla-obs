@@ -16,6 +16,12 @@
   justify-content: space-between;
 }
 
+.premium-report__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
 .premium-report__back {
   background: none;
   border: none;

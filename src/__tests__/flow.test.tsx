@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { LandingPage } from '../pages/LandingPage';
 import { AuditPage } from '../pages/AuditPage';
@@ -107,7 +107,7 @@ describe('Caracalla flow (component-level)', () => {
 
   it('full sub-flow: frictions → score → value', () => {
     let screen_state = 'frictions';
-    const { rerender } = render(
+    render(
       <MemoryRouter>
         <FrictionsPage
           engineOutput={FIXTURE_OUTPUT}

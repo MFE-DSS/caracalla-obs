@@ -6,6 +6,7 @@ import { ExecutionPlanBoard } from '../components/ExecutionPlanBoard';
 import { BlockedItemsBoard } from '../components/BlockedItemsBoard';
 import { AdvisoryCTA } from '../components/AdvisoryCTA';
 import { ScoreBadge } from '../components/ScoreBadge';
+import { ExportReportButton } from '../components/ExportReportButton';
 import { Footer } from '../components/Footer';
 import type { PremiumReportViewModel } from '../types/premiumReport';
 import type { EngineOutputV2 } from '../engine/domain/arbitration';
@@ -15,10 +16,11 @@ import './PremiumReportPage.css';
 interface Props {
   premiumView: PremiumReportViewModel;
   engineOutput: EngineOutputV2;
+  auditId?: string;
   onBack: () => void;
 }
 
-export function PremiumReportPage({ premiumView, engineOutput, onBack }: Props) {
+export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack }: Props) {
   useEffect(() => {
     track('report_viewed' as any);
   }, []);
@@ -33,7 +35,10 @@ export function PremiumReportPage({ premiumView, engineOutput, onBack }: Props) 
       <header className="premium-report__header">
         <div className="premium-report__container">
           <button className="premium-report__back" onClick={onBack} type="button">← Retour</button>
-          <span className="premium-report__badge">Rapport premium</span>
+          <div className="premium-report__header-actions">
+            <span className="premium-report__badge">Rapport premium</span>
+            {auditId && <ExportReportButton auditId={auditId} />}
+          </div>
         </div>
       </header>
 
