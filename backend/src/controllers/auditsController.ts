@@ -1,8 +1,29 @@
 import type { Request, Response } from 'express';
 import { createAuditSchema } from '../validation/auditSchemas.js';
-import { createAudit } from '../services/auditService.js';
+import { createAudit, getAudit, getAuditOutput } from '../services/auditService.js';
 import { getSummary } from '../services/summaryService.js';
 import { getReport } from '../services/reportService.js';
+
+export function handleGetAuditStatus(req: Request, res: Response): void {
+  const { id } = req.params;
+  const audit = getAudit(id);
+
+  if (!audit) {
+    res.status(404).json({ error: 'not_found', message: 'Audit non trouvé.' });
+    return;
+  }
+
+  const output = getAuditOutput(id);
+
+  res.json({
+    audit_id: id,
+    status: audit.status,
+    paid: audit.paid,
+    company_name: audit.company_name,
+    summary_available: !!output,
+    report_available: audit.paid && !!output,
+  });
+}
 
 export function handleCreateAudit(req: Request, res: Response): void {
   const parsed = createAuditSchema.safeParse(req.body);

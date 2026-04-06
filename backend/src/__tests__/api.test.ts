@@ -81,6 +81,40 @@ describe('POST /api/audits', () => {
   });
 });
 
+describe('GET /api/audits/:id (status)', () => {
+  let auditId: string;
+
+  beforeAll(async () => {
+    const res = await request(app).post('/api/audits').send(FIXTURE_A);
+    auditId = res.body.audit_id;
+  });
+
+  it('returns 200 with access status', async () => {
+    const res = await request(app).get(`/api/audits/${auditId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.audit_id).toBe(auditId);
+    expect(res.body.status).toBe('computed');
+    expect(res.body.paid).toBe(false);
+    expect(res.body.company_name).toBe('Menuiserie Dupont');
+    expect(res.body.summary_available).toBe(true);
+    expect(res.body.report_available).toBe(false);
+  });
+
+  it('returns 404 for unknown audit', async () => {
+    const res = await request(app).get('/api/audits/aud_nonexistent');
+    expect(res.status).toBe(404);
+  });
+
+  it('shows report_available=true after payment', async () => {
+    const db = getDb();
+    db.prepare('UPDATE audits SET paid = 1 WHERE id = ?').run(auditId);
+
+    const res = await request(app).get(`/api/audits/${auditId}`);
+    expect(res.body.paid).toBe(true);
+    expect(res.body.report_available).toBe(true);
+  });
+});
+
 describe('GET /api/audits/:id/summary', () => {
   let auditId: string;
 

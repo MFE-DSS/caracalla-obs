@@ -1,0 +1,42 @@
+.payment-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
+
+.payment-page__container {
+  max-width: 480px;
+  text-align: center;
+}
+
+.payment-page__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font-size: 2rem;
+  margin-bottom: var(--space-6);
+}
+
+.payment-page--success .payment-page__icon {
+  background: #D1FAE5;
+  color: var(--semantic-candidate);
+}
+
+.payment-page__detail {
+  font-size: var(--text-base);
+  color: var(--gray-600);
+  line-height: 1.6;
+  margin: var(--space-4) 0 var(--space-8);
+}
+
+.payment-page__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}

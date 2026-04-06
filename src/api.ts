@@ -1,24 +1,14 @@
 /* CARACALLA — Frontend API Client
- * Calls the backend API instead of computing the engine locally.
- * Falls back to local engine computation if API is unavailable (dev/preview mode).
+ * Calls the backend API. Falls back to local engine if API unavailable.
  */
 
 import { buildEngineOutputV2 } from './engine/services/buildEngineOutputV2';
 import type { EngineOutputV2 } from './engine/domain/arbitration';
+import type { PremiumReportViewModel } from './types/premiumReport';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 
-interface CreateAuditResponse {
-  audit_id: string;
-  status: string;
-  summary: {
-    global_score: number;
-    global_level: string;
-    confidence: string;
-    frictions_count: number;
-    top_opportunity_title: string | null;
-  };
-}
+// ── Types ──────────────────────────────────────────────
 
 export interface AuditResult {
   audit_id: string;
@@ -26,9 +16,23 @@ export interface AuditResult {
   source: 'api' | 'local';
 }
 
-/**
- * Submit an audit. Tries the API first, falls back to local engine.
- */
+export interface AuditStatus {
+  audit_id: string;
+  status: string;
+  paid: boolean;
+  company_name: string;
+  summary_available: boolean;
+  report_available: boolean;
+}
+
+export interface ReportResult {
+  audit_id: string;
+  report: EngineOutputV2;
+  premium_view: PremiumReportViewModel;
+}
+
+// ── Submit Audit ───────────────────────────────────────
+
 export async function submitAudit(data: {
   company: string;
   sector: string;
@@ -50,7 +54,7 @@ export async function submitAudit(data: {
     });
 
     if (res.ok) {
-      const createRes: CreateAuditResponse = await res.json();
+      const createRes = await res.json();
       const engineOutput = buildEngineOutputV2({
         company_name: input.company_name,
         company_size_band: input.company_size_band,
@@ -60,24 +64,46 @@ export async function submitAudit(data: {
       return { audit_id: createRes.audit_id, engineOutput, source: 'api' };
     }
   } catch {
-    // API unavailable — fall back to local computation
+    // API unavailable
   }
 
-  // Fallback: compute locally
   const engineOutput = buildEngineOutputV2({
     company_name: input.company_name,
     company_size_band: input.company_size_band,
     industry_hint: input.industry_hint,
     pain_text: input.pain_text,
   });
-
   return { audit_id: `local_${Date.now()}`, engineOutput, source: 'local' };
 }
 
-/**
- * Create a Stripe Checkout session. Returns the Checkout URL.
- * Falls back to dev-unlock if Stripe is not configured.
- */
+// ── Audit Status ───────────────────────────────────────
+
+export async function getAuditStatus(auditId: string): Promise<AuditStatus | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/audits/${auditId}`);
+    if (res.ok) return await res.json();
+  } catch {
+    // API unavailable
+  }
+  return null;
+}
+
+// ── Report ─────────────────────────────────────────────
+
+export async function getAuditReport(auditId: string): Promise<ReportResult | { locked: true } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/api/audits/${auditId}/report`);
+    if (res.ok) return await res.json();
+    if (res.status === 402) return { locked: true };
+    if (res.status === 404) return null;
+  } catch {
+    // API unavailable
+  }
+  return null;
+}
+
+// ── Payment ────────────────────────────────────────────
+
 export async function createPaymentSession(auditId: string): Promise<{ url: string } | { error: string }> {
   try {
     const res = await fetch(`${API_BASE}/api/payments/create-session`, {
@@ -86,38 +112,27 @@ export async function createPaymentSession(auditId: string): Promise<{ url: stri
       body: JSON.stringify({ audit_id: auditId }),
     });
 
-    if (res.ok) {
-      return await res.json();
-    }
+    if (res.ok) return await res.json();
 
     const body = await res.json().catch(() => ({}));
 
-    // If Stripe not configured, try dev-unlock
     if (res.status === 503 || body.error === 'stripe_not_configured') {
       return devUnlock(auditId);
     }
-
-    if (res.status === 409) {
-      return { error: 'already_paid' };
-    }
+    if (res.status === 409) return { error: 'already_paid' };
 
     return { error: body.message ?? 'Erreur de paiement' };
   } catch {
-    // API unavailable — try dev unlock
     return devUnlock(auditId);
   }
 }
 
-/** Dev-only: unlock without Stripe */
 async function devUnlock(auditId: string): Promise<{ url: string } | { error: string }> {
   try {
     const res = await fetch(`${API_BASE}/api/payments/dev-unlock/${auditId}`, { method: 'POST' });
-    if (res.ok) {
-      return { url: `${window.location.origin}?payment=success&audit_id=${auditId}` };
-    }
+    if (res.ok) return { url: `${window.location.origin}/payment/success?audit_id=${auditId}` };
   } catch {
     // Ignore
   }
-  // Pure local fallback — just signal success
-  return { url: `${window.location.origin}?payment=success&audit_id=${auditId}` };
+  return { url: `${window.location.origin}/payment/success?audit_id=${auditId}` };
 }

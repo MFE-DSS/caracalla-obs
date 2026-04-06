@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { HeroBlock } from '../components/HeroBlock';
 import { SectionHeader } from '../components/SectionHeader';
 import { PrimaryCTA } from '../components/PrimaryCTA';
 import { ResponsiveStack } from '../components/ResponsiveStack';
 import { Footer } from '../components/Footer';
+import { loadSession } from '../services/session';
 import { track } from '../analytics';
 import './LandingPage.css';
 
 interface LandingPageProps {
-  onStart: () => void;
+  onStart?: () => void; // Optional: for backward compat with tests
 }
 
 const painPoints = [
@@ -37,18 +39,43 @@ const steps = [
 ];
 
 export function LandingPage({ onStart }: LandingPageProps) {
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  try {
+    navigate = useNavigate();
+  } catch {
+    // Not inside a Router (e.g., in tests)
+  }
+
+  const session = loadSession();
+
   useEffect(() => {
     track('landing_viewed');
   }, []);
 
+  const goToAudit = () => {
+    if (onStart) {
+      onStart();
+    } else if (navigate) {
+      navigate('/audit/new');
+    }
+  };
+
   const handleCta = () => {
     track('landing_cta_clicked', { cta_position: 'hero' });
-    onStart();
+    goToAudit();
   };
 
   const handleCtaBottom = () => {
     track('landing_cta_clicked', { cta_position: 'bottom' });
-    onStart();
+    goToAudit();
+  };
+
+  const handleResume = () => {
+    if (!session || !navigate) return;
+    const target = session.last_known_paid
+      ? `/audit/${session.last_audit_id}/premium`
+      : `/audit/${session.last_audit_id}/summary`;
+    navigate(target);
   };
 
   return (
@@ -59,6 +86,19 @@ export function LandingPage({ onStart }: LandingPageProps) {
         ctaLabel="Commencer le diagnostic gratuit"
         onCtaClick={handleCta}
       />
+
+      {/* Resume last audit */}
+      {session && navigate && (
+        <section className="landing__section landing__resume" aria-label="Reprendre">
+          <div className="landing__container" style={{ textAlign: 'center' }}>
+            <PrimaryCTA
+              label="Reprendre mon dernier diagnostic"
+              onClick={handleResume}
+              variant="secondary"
+            />
+          </div>
+        </section>
+      )}
 
       {/* Pain points */}
       <section className="landing__section" aria-label="Difficultés courantes">
