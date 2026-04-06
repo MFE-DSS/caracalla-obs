@@ -1,0 +1,59 @@
+.audit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.audit-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.audit-form__label {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.audit-form__hint {
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+  line-height: 1.4;
+}
+
+.audit-form__input,
+.audit-form__select {
+  font-family: var(--font-family);
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  min-height: 44px;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.audit-form__input:focus,
+.audit-form__select:focus {
+  outline: none;
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 2px rgba(45, 74, 122, 0.15);
+}
+
+.audit-form__input::placeholder {
+  color: var(--gray-400);
+}
+
+.audit-form__submit {
+  margin-top: var(--space-4);
+}
+
+.audit-form__submit .cta {
+  /* Override: submit is a real button, not the CTA component's button */
+}

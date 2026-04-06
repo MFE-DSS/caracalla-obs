@@ -1,0 +1,50 @@
+.frictions-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.frictions-page__header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.frictions-page__container {
+  max-width: var(--width-content-wide);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.frictions-page__main {
+  flex: 1;
+  padding: var(--space-12) var(--space-4);
+}
+
+.frictions-page__snapshot {
+  margin-bottom: var(--space-12);
+}
+
+.frictions-page__profile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.frictions-page__profile-text {
+  font-size: var(--text-base);
+  color: var(--gray-800);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.frictions-page__section {
+  margin-bottom: var(--space-12);
+}
+
+.frictions-page__next {
+  text-align: center;
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-border);
+}

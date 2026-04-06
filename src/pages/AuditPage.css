@@ -1,0 +1,33 @@
+.audit-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-page__header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.audit-page__container {
+  max-width: var(--width-content);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.audit-page__main {
+  flex: 1;
+  padding: var(--space-12) var(--space-4);
+}
+
+.audit-page__intro {
+  margin-bottom: var(--space-8);
+}
+
+.audit-page__feedback {
+  font-size: var(--text-sm);
+  color: var(--gray-400);
+  margin: 0;
+  line-height: 1.5;
+}

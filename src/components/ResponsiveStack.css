@@ -1,0 +1,17 @@
+.stack {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.stack--gap-sm { gap: var(--space-3); }
+.stack--gap-md { gap: var(--space-6); }
+.stack--gap-lg { gap: var(--space-8); }
+
+@media (min-width: 640px) {
+  .stack--col-2 { grid-template-columns: repeat(2, 1fr); }
+  .stack--col-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+  .stack--col-3 { grid-template-columns: repeat(3, 1fr); }
+}

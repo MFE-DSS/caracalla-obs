@@ -1,0 +1,61 @@
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--text-base);
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  min-height: 44px;
+}
+
+.cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cta--primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+.cta--primary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.cta--primary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.cta--secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.cta--secondary:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.cta--ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: transparent;
+  padding-left: var(--space-3);
+  padding-right: var(--space-3);
+}
+
+.cta--ghost:hover:not(:disabled) {
+  background: var(--gray-50);
+}
+
+.cta--full {
+  width: 100%;
+}
