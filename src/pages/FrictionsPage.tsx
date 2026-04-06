@@ -4,16 +4,21 @@ import { FrictionCard } from '../components/FrictionCard';
 import { ConfidenceBlock } from '../components/ConfidenceBlock';
 import { PrimaryCTA } from '../components/PrimaryCTA';
 import { ResponsiveStack } from '../components/ResponsiveStack';
-import { mockFrictions, mockConfidence, mockCompanyProfile } from '../data/mockData';
+import type { EngineOutput } from '../engine/domain/types';
 import { track } from '../analytics';
 import './FrictionsPage.css';
 
 interface FrictionsPageProps {
+  engineOutput: EngineOutput;
   onNext: () => void;
   onBack: () => void;
 }
 
-export function FrictionsPage({ onNext, onBack }: FrictionsPageProps) {
+const severityMap: Record<string, 'low' | 'medium' | 'high' | 'critical'> = {
+  low: 'low', medium: 'medium', high: 'high', critical: 'critical',
+};
+
+export function FrictionsPage({ engineOutput, onNext, onBack }: FrictionsPageProps) {
   useEffect(() => {
     track('summary_viewed');
   }, []);
@@ -21,6 +26,12 @@ export function FrictionsPage({ onNext, onBack }: FrictionsPageProps) {
   const handleExpand = (frictionId: string, frictionTitle: string) => {
     track('summary_friction_expanded', { friction_id: frictionId, friction_title: frictionTitle });
   };
+
+  const confidenceMessage = engineOutput.confidence === 'high'
+    ? 'Ce diagnostic repose sur des signaux clairs et cohérents.'
+    : engineOutput.confidence === 'medium'
+    ? 'Ce diagnostic repose sur vos déclarations. Il n\'a pas été corroboré par une analyse de vos outils. La fiabilité est bonne sur les frictions déclarées, plus incertaine sur les estimations.'
+    : 'Peu de signaux détectés. Le diagnostic est indicatif et mériterait d\'être approfondi.';
 
   return (
     <div className="frictions-page">
@@ -37,10 +48,14 @@ export function FrictionsPage({ onNext, onBack }: FrictionsPageProps) {
             <SectionHeader title="Votre synthèse" subtitle="Voici ce que nous avons identifié" />
             <div className="frictions-page__profile">
               <p className="frictions-page__profile-text">
-                <strong>{mockCompanyProfile.sector}</strong>, {mockCompanyProfile.size}, basée en {mockCompanyProfile.location}.
-                Activité {mockCompanyProfile.activity} avec un volume de {mockCompanyProfile.volume}.
-                Outils actuels : {mockCompanyProfile.tools}.
+                <strong>{engineOutput.industry_guess}</strong>, {engineOutput.company_size_band} salariés.
+                Entreprise : {engineOutput.company_name}.
               </p>
+              {engineOutput.detected_archetypes.length > 0 && (
+                <p className="frictions-page__profile-text">
+                  Formes de travail identifiées : {engineOutput.detected_archetypes.map((a) => a.label).join(', ')}.
+                </p>
+              )}
             </div>
           </section>
 
@@ -48,18 +63,18 @@ export function FrictionsPage({ onNext, onBack }: FrictionsPageProps) {
           <section className="frictions-page__section" aria-label="Points de friction">
             <SectionHeader
               title="Points de friction identifiés"
-              subtitle={`${mockFrictions.length} éléments détectés, classés par impact`}
+              subtitle={`${engineOutput.frictions.length} élément(s) détecté(s), classé(s) par impact`}
             />
             <ResponsiveStack columns={2}>
-              {mockFrictions.map((f) => (
+              {engineOutput.frictions.map((f) => (
                 <FrictionCard
-                  key={f.id}
-                  title={f.title}
-                  explanation={f.explanation}
-                  source={f.source}
-                  severity={f.severity}
+                  key={f.friction_id}
+                  title={f.label}
+                  explanation={f.description}
+                  source={f.evidence.join(' · ')}
+                  severity={severityMap[f.severity]}
                   confidence={f.confidence}
-                  onExpand={() => handleExpand(f.id, f.title)}
+                  onExpand={() => handleExpand(f.friction_id, f.label)}
                 />
               ))}
             </ResponsiveStack>
@@ -68,9 +83,8 @@ export function FrictionsPage({ onNext, onBack }: FrictionsPageProps) {
           {/* Confidence */}
           <section className="frictions-page__section" aria-label="Niveau de confiance">
             <ConfidenceBlock
-              level={mockConfidence.level}
-              message={mockConfidence.message}
-              missingData={mockConfidence.missingData}
+              level={engineOutput.confidence}
+              message={confidenceMessage}
             />
           </section>
 

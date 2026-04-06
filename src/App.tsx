@@ -4,15 +4,30 @@ import { AuditPage } from './pages/AuditPage';
 import { FrictionsPage } from './pages/FrictionsPage';
 import { ScorePage } from './pages/ScorePage';
 import { ValuePage } from './pages/ValuePage';
+import { buildEngineOutput } from './engine/services/buildEngineOutput';
+import type { EngineOutput, RawAuditInput } from './engine/domain/types';
 
 type Screen = 'landing' | 'audit' | 'frictions' | 'score' | 'value';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
+  const [engineOutput, setEngineOutput] = useState<EngineOutput | null>(null);
 
   const navigate = (to: Screen) => {
     setScreen(to);
     window.scrollTo(0, 0);
+  };
+
+  const handleAuditSubmit = (data: Record<string, string>) => {
+    const input: RawAuditInput = {
+      company_name: data.company || '',
+      company_size_band: data.size || '',
+      industry_hint: data.sector || '',
+      pain_text: data.pain || '',
+    };
+    const output = buildEngineOutput(input);
+    setEngineOutput(output);
+    navigate('frictions');
   };
 
   switch (screen) {
@@ -21,13 +36,14 @@ export default function App() {
     case 'audit':
       return (
         <AuditPage
-          onSubmit={() => navigate('frictions')}
+          onSubmit={handleAuditSubmit}
           onBack={() => navigate('landing')}
         />
       );
     case 'frictions':
       return (
         <FrictionsPage
+          engineOutput={engineOutput!}
           onNext={() => navigate('score')}
           onBack={() => navigate('audit')}
         />
@@ -35,11 +51,17 @@ export default function App() {
     case 'score':
       return (
         <ScorePage
+          engineOutput={engineOutput!}
           onNext={() => navigate('value')}
           onBack={() => navigate('frictions')}
         />
       );
     case 'value':
-      return <ValuePage onBack={() => navigate('score')} />;
+      return (
+        <ValuePage
+          engineOutput={engineOutput!}
+          onBack={() => navigate('score')}
+        />
+      );
   }
 }

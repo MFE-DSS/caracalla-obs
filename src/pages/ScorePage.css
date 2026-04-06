@@ -118,6 +118,19 @@
   margin: 0 0 var(--space-1);
 }
 
+/* Reason trace */
+.score-page__trace {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--gray-600);
+  line-height: 1.8;
+}
+
+.score-page__trace li {
+  margin-bottom: var(--space-2);
+}
+
 /* Next */
 .score-page__next {
   text-align: center;

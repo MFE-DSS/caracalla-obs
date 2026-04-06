@@ -3,15 +3,38 @@ import { SectionHeader } from '../components/SectionHeader';
 import { PaywallValuePanel } from '../components/PaywallValuePanel';
 import { NextStepCard } from '../components/NextStepCard';
 import { Footer } from '../components/Footer';
-import { mockPremiumValue } from '../data/mockData';
+import type { EngineOutput } from '../engine/domain/types';
 import { track } from '../analytics';
 import './ValuePage.css';
 
 interface ValuePageProps {
+  engineOutput: EngineOutput;
   onBack: () => void;
 }
 
-export function ValuePage({ onBack }: ValuePageProps) {
+const premiumValue = {
+  gratuit: [
+    'Synthèse des frictions principales',
+    'Score de maturité global',
+    '1 piste d\'amélioration prioritaire',
+    'Niveau de confiance du diagnostic',
+  ],
+  premium: [
+    'Toutes les opportunités classées par impact et faisabilité',
+    'Coûts estimés et prérequis pour chaque amélioration',
+    'Risques identifiés avec stratégies de mitigation',
+    'Plan pilote concret : périmètre, durée, budget',
+    'Recommandation outillage adaptée à votre secteur',
+  ],
+  conseil: [
+    'Cadrage du projet pilote avec un expert',
+    'Sélection et mise en place de l\'outil adapté',
+    'Formation de votre équipe',
+    'Suivi des résultats sur 3 mois',
+  ],
+};
+
+export function ValuePage({ engineOutput, onBack }: ValuePageProps) {
   useEffect(() => {
     track('paywall_viewed');
   }, []);
@@ -26,6 +49,8 @@ export function ValuePage({ onBack }: ValuePageProps) {
     alert('Prise de rendez-vous à venir. Merci de votre intérêt !');
     track('flow_completed');
   };
+
+  const topOpp = engineOutput.opportunities[0];
 
   return (
     <div className="value-page">
@@ -44,9 +69,9 @@ export function ValuePage({ onBack }: ValuePageProps) {
               subtitle="Voici ce que vous pouvez obtenir en allant plus loin."
             />
             <p className="value-page__recap">
-              Votre diagnostic gratuit a identifié <strong>4 points de friction</strong> et
-              un <strong>score de maturité de 42/100</strong>.
-              Vous connaissez vos principales difficultés et votre piste prioritaire.
+              Votre diagnostic gratuit a identifié <strong>{engineOutput.frictions.length} point(s) de friction</strong> et
+              un <strong>score de maturité de {engineOutput.global_score}/100</strong>.
+              {topOpp && <> Votre piste prioritaire : <strong>{topOpp.title}</strong>.</>}
             </p>
           </section>
 
@@ -54,9 +79,9 @@ export function ValuePage({ onBack }: ValuePageProps) {
           <section className="value-page__section" aria-label="Offres">
             <SectionHeader title="Trois façons de continuer" />
             <PaywallValuePanel
-              gratuit={mockPremiumValue.gratuit}
-              premium={mockPremiumValue.premium}
-              conseil={mockPremiumValue.conseil}
+              gratuit={premiumValue.gratuit}
+              premium={premiumValue.premium}
+              conseil={premiumValue.conseil}
               price="49 € HT"
               onPremiumClick={handlePremium}
               onConseilClick={handleConseil}
@@ -69,7 +94,7 @@ export function ValuePage({ onBack }: ValuePageProps) {
             <div className="value-page__steps">
               <NextStepCard
                 title="Prioriser vos chantiers"
-                description="Toutes vos pistes d'amélioration classées par impact, faisabilité et coût estimé. Plus besoin de deviner par où commencer."
+                description={`${engineOutput.opportunities.length} piste(s) d'amélioration classée(s) par impact, faisabilité et coût estimé. Plus besoin de deviner par où commencer.`}
                 ctaLabel="Obtenir le rapport"
                 onCtaClick={handlePremium}
                 variant="highlight"
