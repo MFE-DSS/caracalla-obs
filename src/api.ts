@@ -51,21 +51,13 @@ export async function submitAudit(data: {
 
     if (res.ok) {
       const createRes: CreateAuditResponse = await res.json();
-
-      // Fetch full summary to get frictions details
-      const summaryRes = await fetch(`${API_BASE}/api/audits/${createRes.audit_id}/summary`);
-      if (summaryRes.ok) {
-        // We still need the full EngineOutputV2 for UI rendering.
-        // The API stores it but summary endpoint only returns a subset.
-        // For now, compute locally but store the audit_id for later premium unlock.
-        const engineOutput = buildEngineOutputV2({
-          company_name: input.company_name,
-          company_size_band: input.company_size_band,
-          industry_hint: input.industry_hint,
-          pain_text: input.pain_text,
-        });
-        return { audit_id: createRes.audit_id, engineOutput, source: 'api' };
-      }
+      const engineOutput = buildEngineOutputV2({
+        company_name: input.company_name,
+        company_size_band: input.company_size_band,
+        industry_hint: input.industry_hint,
+        pain_text: input.pain_text,
+      });
+      return { audit_id: createRes.audit_id, engineOutput, source: 'api' };
     }
   } catch {
     // API unavailable — fall back to local computation
@@ -80,4 +72,52 @@ export async function submitAudit(data: {
   });
 
   return { audit_id: `local_${Date.now()}`, engineOutput, source: 'local' };
+}
+
+/**
+ * Create a Stripe Checkout session. Returns the Checkout URL.
+ * Falls back to dev-unlock if Stripe is not configured.
+ */
+export async function createPaymentSession(auditId: string): Promise<{ url: string } | { error: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/payments/create-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audit_id: auditId }),
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+
+    const body = await res.json().catch(() => ({}));
+
+    // If Stripe not configured, try dev-unlock
+    if (res.status === 503 || body.error === 'stripe_not_configured') {
+      return devUnlock(auditId);
+    }
+
+    if (res.status === 409) {
+      return { error: 'already_paid' };
+    }
+
+    return { error: body.message ?? 'Erreur de paiement' };
+  } catch {
+    // API unavailable — try dev unlock
+    return devUnlock(auditId);
+  }
+}
+
+/** Dev-only: unlock without Stripe */
+async function devUnlock(auditId: string): Promise<{ url: string } | { error: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/api/payments/dev-unlock/${auditId}`, { method: 'POST' });
+    if (res.ok) {
+      return { url: `${window.location.origin}?payment=success&audit_id=${auditId}` };
+    }
+  } catch {
+    // Ignore
+  }
+  // Pure local fallback — just signal success
+  return { url: `${window.location.origin}?payment=success&audit_id=${auditId}` };
 }

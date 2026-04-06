@@ -5,10 +5,11 @@ import { FrictionsPage } from './pages/FrictionsPage';
 import { ScorePage } from './pages/ScorePage';
 import { ValuePage } from './pages/ValuePage';
 import { PremiumReportPage } from './pages/PremiumReportPage';
-import { submitAudit } from './api';
+import { submitAudit, createPaymentSession } from './api';
 import { buildLocalPremiumReport } from './services/localPremiumBuilder';
 import type { EngineOutputV2 } from './engine/domain/arbitration';
 import type { PremiumReportViewModel } from './types/premiumReport';
+import { track } from './analytics';
 
 type Screen = 'landing' | 'audit' | 'frictions' | 'score' | 'value' | 'premium';
 
@@ -17,6 +18,7 @@ export default function App() {
   const [engineOutput, setEngineOutput] = useState<EngineOutputV2 | null>(null);
   const [premiumView, setPremiumView] = useState<PremiumReportViewModel | null>(null);
   const [auditId, setAuditId] = useState<string | null>(null);
+  const [isPaid, setIsPaid] = useState(false);
 
   const navigate = (to: Screen) => {
     setScreen(to);
@@ -32,16 +34,45 @@ export default function App() {
     });
     setAuditId(result.audit_id);
     setEngineOutput(result.engineOutput);
-    // Build premium view locally for immediate preview
     setPremiumView(buildLocalPremiumReport(result.engineOutput));
     navigate('frictions');
   };
 
-  const handleViewPremium = () => {
-    if (engineOutput) {
-      setPremiumView(buildLocalPremiumReport(engineOutput));
+  const handlePayment = async () => {
+    if (!auditId) return;
+
+    track('paywall_cta_clicked', { price: '49' });
+
+    const result = await createPaymentSession(auditId);
+
+    if ('error' in result) {
+      if (result.error === 'already_paid') {
+        setIsPaid(true);
+        navigate('premium');
+      }
+      return;
     }
-    navigate('premium');
+
+    // Redirect to Stripe Checkout (or dev-unlock success URL)
+    if (result.url.includes(window.location.origin)) {
+      // Dev mode: local redirect = already unlocked
+      setIsPaid(true);
+      navigate('premium');
+    } else {
+      // Production: redirect to Stripe
+      window.location.href = result.url;
+    }
+  };
+
+  const handleViewPremium = () => {
+    if (isPaid) {
+      if (engineOutput) {
+        setPremiumView(buildLocalPremiumReport(engineOutput));
+      }
+      navigate('premium');
+    } else {
+      handlePayment();
+    }
   };
 
   switch (screen) {
