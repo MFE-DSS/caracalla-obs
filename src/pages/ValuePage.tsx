@@ -11,6 +11,7 @@ interface ValuePageProps {
   engineOutput: EngineOutputV2;
   auditId?: string | null;
   onBack: () => void;
+  onViewPremium?: () => void;
 }
 
 const premiumValue = {
@@ -41,14 +42,18 @@ const kindLabels: Record<string, string> = {
   backlog: 'À planifier ensuite',
 };
 
-export function ValuePage({ engineOutput, auditId: _auditId, onBack }: ValuePageProps) {
+export function ValuePage({ engineOutput, auditId: _auditId, onBack, onViewPremium }: ValuePageProps) {
   useEffect(() => {
     track('paywall_viewed');
   }, []);
 
   const handlePremium = () => {
     track('paywall_cta_clicked', { price: '49' });
-    alert('Intégration Stripe à venir. Merci de votre intérêt !');
+    if (onViewPremium) {
+      onViewPremium();
+    } else {
+      alert('Intégration Stripe à venir. Merci de votre intérêt !');
+    }
   };
 
   const handleConseil = () => {

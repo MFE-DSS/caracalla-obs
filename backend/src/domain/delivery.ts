@@ -1,4 +1,5 @@
 import type { EngineOutputV2 } from '../../../src/engine/domain/arbitration.js';
+import type { PremiumReportViewModel } from './premiumReport.js';
 
 export interface SummaryPayload {
   global_score: number;
@@ -28,6 +29,7 @@ export interface SummaryResponse {
 export interface ReportResponse {
   audit_id: string;
   report: ReportPayload;
+  premium_view: PremiumReportViewModel;
 }
 
 export interface PremiumLockedResponse {

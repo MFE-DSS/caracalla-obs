@@ -1,5 +1,6 @@
 import type { ReportResponse, PremiumLockedResponse, ReportPayload } from '../domain/delivery.js';
 import { getAudit, getAuditOutput } from './auditService.js';
+import { buildPremiumReport } from './premiumReportBuilder.js';
 
 type ReportResult =
   | { status: 'ok'; data: ReportResponse }
@@ -25,12 +26,14 @@ export function getReport(auditId: string): ReportResult {
   if (!output) return { status: 'not_found' };
 
   const report: ReportPayload = JSON.parse(output.report_payload);
+  const premium_view = buildPremiumReport(report);
 
   return {
     status: 'ok',
     data: {
       audit_id: auditId,
       report,
+      premium_view,
     },
   };
 }
