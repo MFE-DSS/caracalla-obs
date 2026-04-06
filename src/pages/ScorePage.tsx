@@ -4,12 +4,12 @@ import { ScoreBadge } from '../components/ScoreBadge';
 import { EvidenceBlock } from '../components/EvidenceBlock';
 import { ConfidenceBlock } from '../components/ConfidenceBlock';
 import { PrimaryCTA } from '../components/PrimaryCTA';
-import type { EngineOutput } from '../engine/domain/types';
+import type { EngineOutputV2 } from '../engine/domain/arbitration';
 import { track } from '../analytics';
 import './ScorePage.css';
 
 interface ScorePageProps {
-  engineOutput: EngineOutput;
+  engineOutput: EngineOutputV2;
   onNext: () => void;
   onBack: () => void;
 }
@@ -33,7 +33,6 @@ export function ScorePage({ engineOutput, onNext, onBack }: ScorePageProps) {
     })),
   ];
 
-  // Add positive factors if score is decent
   if (engineOutput.global_score >= 35) {
     factors.unshift({
       label: 'Activité structurée',
@@ -42,13 +41,12 @@ export function ScorePage({ engineOutput, onNext, onBack }: ScorePageProps) {
     });
   }
 
-  // Build evidence items from frictions evidence
+  // Build evidence items
   const evidenceItems = engineOutput.frictions
     .flatMap((f) => f.evidence.map((e) => ({ text: e, source: `Friction : ${f.label}` })))
     .slice(0, 6);
 
-  // Top opportunity
-  const topOpp = engineOutput.opportunities[0];
+  const nba = engineOutput.next_best_action;
 
   const confidenceMessage = engineOutput.confidence === 'high'
     ? 'Ce diagnostic repose sur des signaux clairs et cohérents.'
@@ -70,7 +68,7 @@ export function ScorePage({ engineOutput, onNext, onBack }: ScorePageProps) {
           <section className="score-page__section" aria-label="Score de maturité">
             <SectionHeader title="Votre diagnostic" subtitle="Score de maturité opérationnelle" />
             <ScoreBadge
-              label={`Maturité opérationnelle`}
+              label="Maturité opérationnelle"
               value={engineOutput.global_score}
               explanation={engineOutput.reason_trace[0] ?? 'Score calculé à partir de vos réponses.'}
             />
@@ -96,50 +94,63 @@ export function ScorePage({ engineOutput, onNext, onBack }: ScorePageProps) {
             </section>
           )}
 
-          {/* Opportunity teaser */}
-          {topOpp && (
-            <section className="score-page__section" aria-label="Piste prioritaire">
-              <SectionHeader title="Votre piste prioritaire" />
+          {/* Next best action */}
+          {nba && (
+            <section className="score-page__section" aria-label="Action recommandée">
+              <SectionHeader title="Notre recommandation : commencez par là" />
               <article className="score-page__opportunity">
                 <span className="score-page__opportunity-rank">#1</span>
-                <h3 className="score-page__opportunity-title">{topOpp.title}</h3>
+                <h3 className="score-page__opportunity-title">{nba.title}</h3>
                 <p className="score-page__opportunity-detail">
-                  <strong>Friction adressée :</strong> {topOpp.linked_frictions.join(', ')}
+                  <strong>Temps de retour estimé :</strong> {nba.expected_time_to_value}
                 </p>
-                <p className="score-page__opportunity-detail">
-                  <strong>Explication :</strong> {topOpp.explanation}
-                </p>
-                <p className="score-page__opportunity-detail">
-                  <strong>Score de priorité :</strong> {topOpp.priority_score} — {topOpp.tier === 'top_candidate' ? 'Priorité haute' : topOpp.tier === 'candidate' ? 'Priorité moyenne' : 'À considérer'}
-                </p>
+                {engineOutput.why_this_first.length > 0 && (
+                  <div className="score-page__why">
+                    <strong>Pourquoi cette action en premier :</strong>
+                    <ul className="score-page__why-list">
+                      {engineOutput.why_this_first.map((reason, i) => (
+                        <li key={i}>{reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </article>
+            </section>
+          )}
+
+          {/* Blocked items */}
+          {engineOutput.blocked_items.length > 0 && (
+            <section className="score-page__section" aria-label="Actions différées">
+              <SectionHeader title="Ce qui est trop tôt aujourd'hui" subtitle="Ces pistes sont pertinentes mais nécessitent des prérequis" />
+              <div className="score-page__blocked">
+                {engineOutput.blocked_items.map((b) => (
+                  <div key={b.opportunity_id} className="score-page__blocked-item">
+                    <span className="score-page__blocked-title">{b.title}</span>
+                    <span className="score-page__blocked-reason">{b.why_blocked}</span>
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 
           {/* Evidence */}
           {evidenceItems.length > 0 && (
             <section className="score-page__section" aria-label="Éléments de preuve">
-              <EvidenceBlock
-                label="Basé sur vos réponses"
-                items={evidenceItems}
-              />
+              <EvidenceBlock label="Basé sur vos réponses" items={evidenceItems} />
             </section>
           )}
 
           {/* Confidence */}
           <section className="score-page__section" aria-label="Confiance">
-            <ConfidenceBlock
-              level={engineOutput.confidence}
-              message={confidenceMessage}
-            />
+            <ConfidenceBlock level={engineOutput.confidence} message={confidenceMessage} />
           </section>
 
-          {/* Reason trace */}
-          {engineOutput.reason_trace.length > 1 && (
+          {/* Arbitration trace */}
+          {engineOutput.arbitration_trace.length > 0 && (
             <section className="score-page__section" aria-label="Trace de raisonnement">
               <SectionHeader title="Comment nous avons raisonné" />
               <ul className="score-page__trace">
-                {engineOutput.reason_trace.map((t, i) => (
+                {engineOutput.arbitration_trace.map((t, i) => (
                   <li key={i}>{t}</li>
                 ))}
               </ul>

@@ -4,12 +4,12 @@ import { FrictionCard } from '../components/FrictionCard';
 import { ConfidenceBlock } from '../components/ConfidenceBlock';
 import { PrimaryCTA } from '../components/PrimaryCTA';
 import { ResponsiveStack } from '../components/ResponsiveStack';
-import type { EngineOutput } from '../engine/domain/types';
+import type { EngineOutputV2 } from '../engine/domain/arbitration';
 import { track } from '../analytics';
 import './FrictionsPage.css';
 
 interface FrictionsPageProps {
-  engineOutput: EngineOutput;
+  engineOutput: EngineOutputV2;
   onNext: () => void;
   onBack: () => void;
 }

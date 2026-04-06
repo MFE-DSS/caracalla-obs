@@ -4,14 +4,15 @@ import { AuditPage } from './pages/AuditPage';
 import { FrictionsPage } from './pages/FrictionsPage';
 import { ScorePage } from './pages/ScorePage';
 import { ValuePage } from './pages/ValuePage';
-import { buildEngineOutput } from './engine/services/buildEngineOutput';
-import type { EngineOutput, RawAuditInput } from './engine/domain/types';
+import { buildEngineOutputV2 } from './engine/services/buildEngineOutputV2';
+import type { EngineOutputV2 } from './engine/domain/arbitration';
+import type { RawAuditInput } from './engine/domain/types';
 
 type Screen = 'landing' | 'audit' | 'frictions' | 'score' | 'value';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
-  const [engineOutput, setEngineOutput] = useState<EngineOutput | null>(null);
+  const [engineOutput, setEngineOutput] = useState<EngineOutputV2 | null>(null);
 
   const navigate = (to: Screen) => {
     setScreen(to);
@@ -25,7 +26,7 @@ export default function App() {
       industry_hint: data.sector || '',
       pain_text: data.pain || '',
     };
-    const output = buildEngineOutput(input);
+    const output = buildEngineOutputV2(input);
     setEngineOutput(output);
     navigate('frictions');
   };
