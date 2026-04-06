@@ -9,6 +9,7 @@ import './ValuePage.css';
 
 interface ValuePageProps {
   engineOutput: EngineOutputV2;
+  auditId?: string | null;
   onBack: () => void;
 }
 
@@ -40,7 +41,7 @@ const kindLabels: Record<string, string> = {
   backlog: 'À planifier ensuite',
 };
 
-export function ValuePage({ engineOutput, onBack }: ValuePageProps) {
+export function ValuePage({ engineOutput, auditId: _auditId, onBack }: ValuePageProps) {
   useEffect(() => {
     track('paywall_viewed');
   }, []);

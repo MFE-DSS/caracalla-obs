@@ -1,11 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
-
 // Mock analytics to avoid console noise
 vi.mock('../analytics', () => ({
   track: vi.fn(),
   trackOnce: vi.fn(),
+}));
+
+// Mock API to avoid network calls — always compute locally
+vi.mock('../api', () => ({
+  submitAudit: vi.fn(async (data: { company: string; sector: string; size: string; pain: string }) => {
+    const { buildEngineOutputV2: build } = await import('../engine/services/buildEngineOutputV2');
+    const engineOutput = build({
+      company_name: data.company,
+      company_size_band: data.size,
+      industry_hint: data.sector,
+      pain_text: data.pain,
+    });
+    return { audit_id: `test_${Date.now()}`, engineOutput, source: 'local' as const };
+  }),
 }));
 
 describe('Caracalla flow', () => {
@@ -47,7 +60,7 @@ describe('Caracalla flow', () => {
     expect(screen.getByText('Voir mon diagnostic')).toBeDisabled();
   });
 
-  it('full flow: landing → audit → frictions (engine-powered) → score → value', () => {
+  it('full flow: landing → audit → frictions (engine-powered) → score → value', async () => {
     render(<App />);
 
     // Landing → Audit
@@ -62,16 +75,17 @@ describe('Caracalla flow', () => {
       target: { value: 'Je perds du temps sur des tâches répétitives' },
     });
 
-    // Submit audit → Frictions (now engine-powered)
+    // Submit audit → Frictions (async API call)
     fireEvent.click(screen.getByText('Voir mon diagnostic'));
-    expect(screen.getByText('Votre synthèse')).toBeInTheDocument();
-    // Engine should detect frictions from the pain text
+
+    await waitFor(() => {
+      expect(screen.getByText('Votre synthèse')).toBeInTheDocument();
+    });
     expect(screen.getByText(/Points de friction identifiés/)).toBeInTheDocument();
 
     // Frictions → Score
     fireEvent.click(screen.getByText('Voir le diagnostic complet et le score'));
     expect(screen.getByText('Votre diagnostic')).toBeInTheDocument();
-    // Score should be a number rendered by ScoreBadge
     expect(screen.getByText('/100')).toBeInTheDocument();
 
     // Score → Value
@@ -79,7 +93,7 @@ describe('Caracalla flow', () => {
     expect(screen.getByText('Trois façons de continuer')).toBeInTheDocument();
   });
 
-  it('engine produces different results for different audit inputs', () => {
+  it('engine produces different results for different audit inputs', async () => {
     const { unmount } = render(<App />);
 
     // Flow 1: repetitive tasks
@@ -91,7 +105,7 @@ describe('Caracalla flow', () => {
       target: { value: 'Je perds du temps sur des tâches répétitives' },
     });
     fireEvent.click(screen.getByText('Voir mon diagnostic'));
-    screen.getByText(/élément\(s\) détecté/);
+    await waitFor(() => screen.getByText(/élément\(s\) détecté/));
     unmount();
 
     // Flow 2: visibility
@@ -104,11 +118,9 @@ describe('Caracalla flow', () => {
       target: { value: 'Je n\'ai pas de visibilité sur mon activité' },
     });
     fireEvent.click(screen.getByText('Voir mon diagnostic'));
-    screen.getByText(/élément\(s\) détecté/);
+    await waitFor(() => screen.getByText(/élément\(s\) détecté/));
     unmount2();
 
-    // Different inputs should produce different friction counts or descriptions
-    // (at minimum, company names differ)
     expect(screen).toBeDefined(); // flow completed without crash
   });
 });

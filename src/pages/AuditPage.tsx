@@ -7,7 +7,7 @@ import { track } from '../analytics';
 import './AuditPage.css';
 
 interface AuditPageProps {
-  onSubmit: (data: Record<string, string>) => void;
+  onSubmit: (data: Record<string, string>) => void | Promise<void>;
   onBack: () => void;
 }
 

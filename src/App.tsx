@@ -4,30 +4,30 @@ import { AuditPage } from './pages/AuditPage';
 import { FrictionsPage } from './pages/FrictionsPage';
 import { ScorePage } from './pages/ScorePage';
 import { ValuePage } from './pages/ValuePage';
-import { buildEngineOutputV2 } from './engine/services/buildEngineOutputV2';
+import { submitAudit } from './api';
 import type { EngineOutputV2 } from './engine/domain/arbitration';
-import type { RawAuditInput } from './engine/domain/types';
 
 type Screen = 'landing' | 'audit' | 'frictions' | 'score' | 'value';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
   const [engineOutput, setEngineOutput] = useState<EngineOutputV2 | null>(null);
+  const [auditId, setAuditId] = useState<string | null>(null);
 
   const navigate = (to: Screen) => {
     setScreen(to);
     window.scrollTo(0, 0);
   };
 
-  const handleAuditSubmit = (data: Record<string, string>) => {
-    const input: RawAuditInput = {
-      company_name: data.company || '',
-      company_size_band: data.size || '',
-      industry_hint: data.sector || '',
-      pain_text: data.pain || '',
-    };
-    const output = buildEngineOutputV2(input);
-    setEngineOutput(output);
+  const handleAuditSubmit = async (data: Record<string, string>) => {
+    const result = await submitAudit({
+      company: data.company || '',
+      sector: data.sector || '',
+      size: data.size || '',
+      pain: data.pain || '',
+    });
+    setAuditId(result.audit_id);
+    setEngineOutput(result.engineOutput);
     navigate('frictions');
   };
 
@@ -61,6 +61,7 @@ export default function App() {
       return (
         <ValuePage
           engineOutput={engineOutput!}
+          auditId={auditId}
           onBack={() => navigate('score')}
         />
       );
