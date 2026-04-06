@@ -3,7 +3,16 @@ import { getAudit, getAuditOutput } from '../services/auditService.js';
 import { buildPremiumReport } from '../services/premiumReportBuilder.js';
 import { buildExportReport } from '../services/exportReportBuilder.js';
 import { generatePdf } from '../services/pdfService.js';
+import { verifyAccessToken } from '../services/accessTokenService.js';
 import type { EngineOutputV2 } from '../../../src/engine/domain/arbitration.js';
+
+function extractToken(req: Request): string | null {
+  const q = req.query.token;
+  if (typeof q === 'string' && q) return q;
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+  return null;
+}
 
 export async function handleExportPdf(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
@@ -12,6 +21,16 @@ export async function handleExportPdf(req: Request, res: Response): Promise<void
   if (!audit) {
     res.status(404).json({ error: 'not_found', message: 'Audit non trouvé.' });
     return;
+  }
+
+  // Token-based access check
+  const token = extractToken(req);
+  if (token) {
+    const payload = verifyAccessToken(token, 'export_access', id) ?? verifyAccessToken(token, 'premium_access', id);
+    if (!payload) {
+      res.status(403).json({ error: 'invalid_token', message: 'Lien invalide ou expiré.' });
+      return;
+    }
   }
 
   if (!audit.paid) {

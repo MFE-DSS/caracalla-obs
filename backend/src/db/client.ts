@@ -42,7 +42,8 @@ function initSchema(db: Database.Database): void {
       industry_hint TEXT NOT NULL,
       pain_text TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'draft',
-      paid INTEGER NOT NULL DEFAULT 0
+      paid INTEGER NOT NULL DEFAULT 0,
+      access_token TEXT
     );
 
     CREATE TABLE IF NOT EXISTS audit_outputs (

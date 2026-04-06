@@ -4,7 +4,7 @@ import { PremiumReportPage } from './PremiumReportPage';
 import { getAuditStatus, getAuditReport } from '../api';
 import { buildEngineOutputV2 } from '../engine/services/buildEngineOutputV2';
 import { buildLocalPremiumReport } from '../services/localPremiumBuilder';
-import { saveSession } from '../services/session';
+import { saveSession, loadSession } from '../services/session';
 import type { EngineOutputV2 } from '../engine/domain/arbitration';
 import type { PremiumReportViewModel } from '../types/premiumReport';
 
@@ -15,6 +15,7 @@ export function PremiumPage() {
   const [premiumView, setPremiumView] = useState<PremiumReportViewModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auditId) return;
@@ -22,27 +23,38 @@ export function PremiumPage() {
     async function load() {
       setLoading(true);
 
-      // Check access
       const status = await getAuditStatus(auditId!);
       if (!status) {
         setAccessDenied(true);
+        setErrorMessage('Ce diagnostic est introuvable ou n\'est plus disponible.');
         setLoading(false);
         return;
       }
 
       if (!status.paid) {
         setAccessDenied(true);
+        setErrorMessage('Le rapport complet n\'est pas encore débloqué pour ce diagnostic.');
         setLoading(false);
         return;
       }
 
-      saveSession(auditId!, true, 'premium');
+      // Get token from status response or session
+      const session = loadSession();
+      const accessToken = status.access_token ?? session?.access_token ?? null;
 
-      // Try to fetch the full report from backend
-      const report = await getAuditReport(auditId!);
+      saveSession(auditId!, true, 'premium', accessToken);
+
+      // Fetch report with token
+      const report = await getAuditReport(auditId!, accessToken);
       if (report && !('locked' in report)) {
         setEngineOutput(report.report);
         setPremiumView(report.premium_view);
+      } else if (report && 'locked' in report) {
+        // Token invalid or expired
+        setAccessDenied(true);
+        setErrorMessage('Lien invalide ou expiré. Veuillez contacter le support.');
+        setLoading(false);
+        return;
       } else {
         // Fallback: compute locally
         const output = buildEngineOutputV2({
@@ -73,7 +85,7 @@ export function PremiumPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '16px', padding: '16px', textAlign: 'center' }}>
         <p style={{ color: 'var(--gray-600)', fontSize: 'var(--text-base)', maxWidth: '400px' }}>
-          Le rapport complet n'est pas encore débloqué pour ce diagnostic.
+          {errorMessage}
         </p>
         <button
           onClick={() => navigate(auditId ? `/audit/${auditId}/summary` : '/')}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PrimaryCTA } from './PrimaryCTA';
+import { loadSession } from '../services/session';
 import './ExportReportButton.css';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
@@ -17,27 +18,36 @@ export function ExportReportButton({ auditId }: Props) {
     setError(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/audits/${auditId}/export`);
+      const session = loadSession();
+      const token = session?.access_token;
+      const url = token
+        ? `${API_BASE}/api/audits/${auditId}/export?token=${encodeURIComponent(token)}`
+        : `${API_BASE}/api/audits/${auditId}/export`;
+
+      const res = await fetch(url);
 
       if (res.status === 402) {
         setError('Le rapport PDF nécessite un déverrouillage premium.');
         return;
       }
-
+      if (res.status === 403) {
+        setError('Lien invalide ou expiré.');
+        return;
+      }
       if (!res.ok) {
         setError('Erreur lors de la génération du PDF.');
         return;
       }
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = blobUrl;
       a.download = `caracalla-report-${auditId}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
     } catch {
       setError('Impossible de télécharger le rapport. Vérifiez votre connexion.');
     } finally {

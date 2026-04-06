@@ -8,6 +8,7 @@ export interface AuditRecord {
   pain_text: string;
   status: 'draft' | 'computed' | 'error';
   paid: boolean;
+  access_token: string | null;
 }
 
 export interface AuditOutputRecord {

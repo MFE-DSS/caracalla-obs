@@ -23,6 +23,7 @@ export interface AuditStatus {
   company_name: string;
   summary_available: boolean;
   report_available: boolean;
+  access_token?: string | null;
 }
 
 export interface ReportResult {
@@ -90,9 +91,12 @@ export async function getAuditStatus(auditId: string): Promise<AuditStatus | nul
 
 // ── Report ─────────────────────────────────────────────
 
-export async function getAuditReport(auditId: string): Promise<ReportResult | { locked: true } | null> {
+export async function getAuditReport(auditId: string, accessToken?: string | null): Promise<ReportResult | { locked: true } | null> {
   try {
-    const res = await fetch(`${API_BASE}/api/audits/${auditId}/report`);
+    const url = accessToken
+      ? `${API_BASE}/api/audits/${auditId}/report?token=${encodeURIComponent(accessToken)}`
+      : `${API_BASE}/api/audits/${auditId}/report`;
+    const res = await fetch(url);
     if (res.ok) return await res.json();
     if (res.status === 402) return { locked: true };
     if (res.status === 404) return null;
@@ -127,10 +131,16 @@ export async function createPaymentSession(auditId: string): Promise<{ url: stri
   }
 }
 
-async function devUnlock(auditId: string): Promise<{ url: string } | { error: string }> {
+async function devUnlock(auditId: string): Promise<{ url: string; access_token?: string } | { error: string }> {
   try {
     const res = await fetch(`${API_BASE}/api/payments/dev-unlock/${auditId}`, { method: 'POST' });
-    if (res.ok) return { url: `${window.location.origin}/payment/success?audit_id=${auditId}` };
+    if (res.ok) {
+      const body = await res.json();
+      return {
+        url: `${window.location.origin}/payment/success?audit_id=${auditId}`,
+        access_token: body.access_token,
+      };
+    }
   } catch {
     // Ignore
   }

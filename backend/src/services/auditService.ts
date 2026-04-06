@@ -72,8 +72,12 @@ export function getAuditOutput(auditId: string): AuditOutputRecord | null {
   return (db.prepare('SELECT * FROM audit_outputs WHERE audit_id = ? ORDER BY computed_at DESC LIMIT 1').get(auditId) as AuditOutputRecord | undefined) ?? null;
 }
 
-export function markAsPaid(auditId: string): boolean {
+export function markAsPaid(auditId: string, accessToken?: string): boolean {
   const db = getDb();
+  if (accessToken) {
+    const result = db.prepare('UPDATE audits SET paid = 1, access_token = ?, updated_at = datetime(\'now\') WHERE id = ?').run(accessToken, auditId);
+    return result.changes > 0;
+  }
   const result = db.prepare('UPDATE audits SET paid = 1, updated_at = datetime(\'now\') WHERE id = ?').run(auditId);
   return result.changes > 0;
 }

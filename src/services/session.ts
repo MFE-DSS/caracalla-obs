@@ -8,20 +8,23 @@ interface SessionData {
   last_audit_id: string;
   last_known_paid: boolean;
   last_screen: string;
+  access_token: string | null;
   timestamp: number;
 }
 
-export function saveSession(auditId: string, paid: boolean, screen: string): void {
+export function saveSession(auditId: string, paid: boolean, screen: string, accessToken?: string | null): void {
   try {
+    const existing = loadSession();
     const data: SessionData = {
       last_audit_id: auditId,
       last_known_paid: paid,
       last_screen: screen,
+      access_token: accessToken ?? existing?.access_token ?? null,
       timestamp: Date.now(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
-    // localStorage unavailable (private browsing, etc.)
+    // localStorage unavailable
   }
 }
 
@@ -30,7 +33,6 @@ export function loadSession(): SessionData | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const data: SessionData = JSON.parse(raw);
-    // Expire after 30 days
     if (Date.now() - data.timestamp > 30 * 24 * 60 * 60 * 1000) {
       clearSession();
       return null;

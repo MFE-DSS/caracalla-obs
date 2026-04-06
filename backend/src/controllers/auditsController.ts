@@ -3,6 +3,15 @@ import { createAuditSchema } from '../validation/auditSchemas.js';
 import { createAudit, getAudit, getAuditOutput } from '../services/auditService.js';
 import { getSummary } from '../services/summaryService.js';
 import { getReport } from '../services/reportService.js';
+import { verifyAccessToken } from '../services/accessTokenService.js';
+
+function extractToken(req: Request): string | null {
+  const q = req.query.token;
+  if (typeof q === 'string' && q) return q;
+  const auth = req.headers.authorization;
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+  return null;
+}
 
 export function handleGetAuditStatus(req: Request, res: Response): void {
   const { id } = req.params;
@@ -22,6 +31,7 @@ export function handleGetAuditStatus(req: Request, res: Response): void {
     company_name: audit.company_name,
     summary_available: !!output,
     report_available: audit.paid && !!output,
+    access_token: audit.paid ? (audit.access_token ?? null) : null,
   });
 }
 
@@ -58,6 +68,17 @@ export function handleGetSummary(req: Request, res: Response): void {
 
 export function handleGetReport(req: Request, res: Response): void {
   const { id } = req.params;
+
+  // Token-based access check
+  const token = extractToken(req);
+  if (token) {
+    const payload = verifyAccessToken(token, 'premium_access', id);
+    if (!payload) {
+      res.status(403).json({ error: 'invalid_token', message: 'Lien invalide ou expiré.' });
+      return;
+    }
+  }
+
   const result = getReport(id);
 
   switch (result.status) {
@@ -65,6 +86,12 @@ export function handleGetReport(req: Request, res: Response): void {
       res.status(404).json({ error: 'not_found', message: 'Audit non trouvé.' });
       return;
     case 'locked':
+      // If no token provided and report is locked, return 402
+      if (!token) {
+        res.status(402).json(result.data);
+        return;
+      }
+      // Token was provided but report is locked — shouldn't happen if token is valid
       res.status(402).json(result.data);
       return;
     case 'ok':

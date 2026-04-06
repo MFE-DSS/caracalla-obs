@@ -59,6 +59,6 @@ export function handleDevUnlock(req: Request, res: Response): void {
     return;
   }
 
-  const success = devUnlockPremium(id);
-  res.json({ audit_id: id, paid: success || audit.paid });
+  const result = devUnlockPremium(id);
+  res.json({ audit_id: id, paid: result.success || audit.paid, access_token: result.access_token });
 }

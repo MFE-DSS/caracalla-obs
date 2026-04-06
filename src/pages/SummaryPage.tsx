@@ -29,7 +29,7 @@ export function SummaryPage() {
 
       if (status) {
         setIsPaid(status.paid);
-        saveSession(auditId!, status.paid, 'summary');
+        saveSession(auditId!, status.paid, 'summary', status.access_token);
         // Reconstruct engine output locally (backend stores it but we need full V2 for UI)
         // In production, we'd fetch the full report payload
         const output = buildEngineOutputV2({
@@ -81,9 +81,10 @@ export function SummaryPage() {
       return;
     }
 
+    const accessToken = 'access_token' in result ? (result as { access_token?: string }).access_token : undefined;
     if (result.url.includes(window.location.origin)) {
       setIsPaid(true);
-      saveSession(auditId, true, 'premium');
+      saveSession(auditId, true, 'premium', accessToken);
       navigate(`/audit/${auditId}/premium`);
     } else {
       window.location.href = result.url;
