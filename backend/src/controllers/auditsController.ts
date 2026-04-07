@@ -3,7 +3,7 @@ import { createAuditSchema } from '../validation/auditSchemas.js';
 import { createAudit, getAudit, getAuditOutput } from '../services/auditService.js';
 import { getSummary } from '../services/summaryService.js';
 import { getReport } from '../services/reportService.js';
-import { verifyAccessToken } from '../services/accessTokenService.js';
+import { verifyAccessToken, generateAccessToken } from '../services/accessTokenService.js';
 
 function extractToken(req: Request): string | null {
   const q = req.query.token;
@@ -24,6 +24,9 @@ export function handleGetAuditStatus(req: Request, res: Response): void {
 
   const output = getAuditOutput(id);
 
+  // Issue a fresh short-lived access token if paid (for backward-compat clients)
+  const freshAccessToken = audit.paid ? generateAccessToken(id, 'premium_access') : null;
+
   res.json({
     audit_id: id,
     status: audit.status,
@@ -31,7 +34,8 @@ export function handleGetAuditStatus(req: Request, res: Response): void {
     company_name: audit.company_name,
     summary_available: !!output,
     report_available: audit.paid && !!output,
-    access_token: audit.paid ? (audit.access_token ?? null) : null,
+    refresh_token: audit.paid ? (audit.access_token ?? null) : null,
+    access_token: freshAccessToken,
   });
 }
 

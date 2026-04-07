@@ -9,10 +9,17 @@ interface SessionData {
   last_known_paid: boolean;
   last_screen: string;
   access_token: string | null;
+  refresh_token: string | null;
   timestamp: number;
 }
 
-export function saveSession(auditId: string, paid: boolean, screen: string, accessToken?: string | null): void {
+export function saveSession(
+  auditId: string,
+  paid: boolean,
+  screen: string,
+  accessToken?: string | null,
+  refreshToken?: string | null,
+): void {
   try {
     const existing = loadSession();
     const data: SessionData = {
@@ -20,6 +27,7 @@ export function saveSession(auditId: string, paid: boolean, screen: string, acce
       last_known_paid: paid,
       last_screen: screen,
       access_token: accessToken ?? existing?.access_token ?? null,
+      refresh_token: refreshToken ?? existing?.refresh_token ?? null,
       timestamp: Date.now(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));

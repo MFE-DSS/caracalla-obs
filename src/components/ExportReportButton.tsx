@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PrimaryCTA } from './PrimaryCTA';
-import { loadSession } from '../services/session';
+import { authFetch } from '../api';
 import './ExportReportButton.css';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
@@ -18,13 +18,7 @@ export function ExportReportButton({ auditId }: Props) {
     setError(null);
 
     try {
-      const session = loadSession();
-      const token = session?.access_token;
-      const url = token
-        ? `${API_BASE}/api/audits/${auditId}/export?token=${encodeURIComponent(token)}`
-        : `${API_BASE}/api/audits/${auditId}/export`;
-
-      const res = await fetch(url);
+      const res = await authFetch(`${API_BASE}/api/audits/${auditId}/export`);
 
       if (res.status === 402) {
         setError('Le rapport PDF nécessite un déverrouillage premium.');

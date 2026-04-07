@@ -38,14 +38,15 @@ export function PremiumPage() {
         return;
       }
 
-      // Get token from status response or session
+      // Get refresh token from status response or session
       const session = loadSession();
-      const accessToken = status.access_token ?? session?.access_token ?? null;
+      const refreshToken = status.refresh_token ?? status.access_token ?? session?.refresh_token ?? null;
 
-      saveSession(auditId!, true, 'premium', accessToken);
+      // Persist refresh token; access tokens are short-lived and managed by authFetch
+      saveSession(auditId!, true, 'premium', null, refreshToken);
 
-      // Fetch report with token
-      const report = await getAuditReport(auditId!, accessToken);
+      // Fetch report — authFetch will handle Authorization header + auto-refresh
+      const report = await getAuditReport(auditId!, null);
       if (report && !('locked' in report)) {
         setEngineOutput(report.report);
         setPremiumView(report.premium_view);

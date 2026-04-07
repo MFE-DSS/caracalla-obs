@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { getAudit, markAsPaid } from './auditService.js';
-import { generateAccessToken } from './accessTokenService.js';
+import { generateAccessToken, generateRefreshToken } from './accessTokenService.js';
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? '';
@@ -57,7 +57,7 @@ export function createCheckoutSession(auditId: string): Promise<CreateCheckoutRe
   });
 }
 
-export function handleWebhookEvent(payload: Buffer, signature: string): { audit_id: string | null; action: string; access_token?: string } {
+export function handleWebhookEvent(payload: Buffer, signature: string): { audit_id: string | null; action: string; access_token?: string; refresh_token?: string } {
   if (!STRIPE_WEBHOOK_SECRET) {
     throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
   }
@@ -72,11 +72,12 @@ export function handleWebhookEvent(payload: Buffer, signature: string): { audit_
     if (auditId) {
       const audit = getAudit(auditId);
       if (audit && !audit.paid) {
-        const token = generateAccessToken(auditId, 'premium_access');
-        markAsPaid(auditId, token);
-        return { audit_id: auditId, action: 'unlocked', access_token: token };
+        const accessToken = generateAccessToken(auditId, 'premium_access');
+        const refreshToken = generateRefreshToken(auditId, 'premium_access');
+        markAsPaid(auditId, refreshToken);
+        return { audit_id: auditId, action: 'unlocked', access_token: accessToken, refresh_token: refreshToken };
       }
-      return { audit_id: auditId, action: 'already_paid', access_token: audit?.access_token ?? undefined };
+      return { audit_id: auditId, action: 'already_paid', refresh_token: audit?.access_token ?? undefined };
     }
 
     return { audit_id: null, action: 'missing_metadata' };
@@ -86,11 +87,16 @@ export function handleWebhookEvent(payload: Buffer, signature: string): { audit_
 }
 
 /** For testing: directly unlock without Stripe */
-export function devUnlockPremium(auditId: string): { success: boolean; access_token?: string } {
+export function devUnlockPremium(auditId: string): { success: boolean; access_token?: string; refresh_token?: string } {
   const audit = getAudit(auditId);
   if (!audit) return { success: false };
-  if (audit.paid) return { success: true, access_token: audit.access_token ?? undefined };
-  const token = generateAccessToken(auditId, 'premium_access');
-  markAsPaid(auditId, token);
-  return { success: true, access_token: token };
+  if (audit.paid) {
+    // Issue a fresh access token; refresh token is the stored one (long-lived)
+    const accessToken = generateAccessToken(auditId, 'premium_access');
+    return { success: true, access_token: accessToken, refresh_token: audit.access_token ?? undefined };
+  }
+  const accessToken = generateAccessToken(auditId, 'premium_access');
+  const refreshToken = generateRefreshToken(auditId, 'premium_access');
+  markAsPaid(auditId, refreshToken);
+  return { success: true, access_token: accessToken, refresh_token: refreshToken };
 }
