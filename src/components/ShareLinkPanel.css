@@ -1,0 +1,35 @@
+.share-panel {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 20px 24px;
+  background: #fafafa;
+}
+.share-panel__title { margin: 0 0 4px; font-size: 1.1rem; }
+.share-panel__subtitle { margin: 0 0 16px; color: #555; font-size: 0.9rem; }
+.share-panel__create {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.share-panel__create:disabled { opacity: 0.6; cursor: wait; }
+.share-panel__error { color: #b91c1c; margin-top: 12px; }
+.share-panel__empty, .share-panel__loading { color: #666; margin-top: 16px; }
+.share-panel__list { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 12px; }
+.share-panel__item { border: 1px solid #e5e7eb; background: #fff; border-radius: 10px; padding: 12px 14px; }
+.share-panel__item-row { display: flex; gap: 8px; align-items: center; }
+.share-panel__url {
+  flex: 1; min-width: 0; font-family: ui-monospace, monospace; font-size: 0.85rem;
+  padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;
+}
+.share-panel__btn {
+  padding: 8px 12px; border-radius: 6px; border: 1px solid #d1d5db;
+  background: #fff; cursor: pointer; font-size: 0.85rem;
+}
+.share-panel__btn--danger { color: #b91c1c; border-color: #fca5a5; }
+.share-panel__meta { display: flex; gap: 12px; align-items: center; margin-top: 8px; font-size: 0.8rem; color: #555; }
+.share-panel__badge { background: #eef2ff; color: #3730a3; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+.share-panel__status { color: #047857; font-weight: 600; }

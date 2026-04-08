@@ -4,6 +4,7 @@ import { buildPremiumReport } from '../services/premiumReportBuilder.js';
 import { buildExportReport } from '../services/exportReportBuilder.js';
 import { generatePdf } from '../services/pdfService.js';
 import { verifyAccessToken } from '../services/accessTokenService.js';
+import { recordEvent } from '../services/eventService.js';
 import type { EngineOutputV2 } from '../../../src/engine/domain/arbitration.js';
 
 function extractToken(req: Request): string | null {
@@ -28,12 +29,15 @@ export async function handleExportPdf(req: Request, res: Response): Promise<void
   if (token) {
     const payload = verifyAccessToken(token, 'export_access', id) ?? verifyAccessToken(token, 'premium_access', id);
     if (!payload) {
+      recordEvent({ audit_id: id, event_type: 'invalid_token_attempt', surface: 'api', payload: { target: 'export' } });
+      recordEvent({ audit_id: id, event_type: 'report_access_denied', surface: 'api', payload: { reason: 'invalid_token', target: 'export' } });
       res.status(403).json({ error: 'invalid_token', message: 'Lien invalide ou expiré.' });
       return;
     }
   }
 
   if (!audit.paid) {
+    recordEvent({ audit_id: id, event_type: 'report_access_denied', surface: 'api', payload: { reason: 'premium_locked', target: 'export' } });
     res.status(402).json({
       error: 'premium_locked',
       message: 'Le rapport PDF nécessite un déverrouillage premium.',
@@ -57,6 +61,7 @@ export async function handleExportPdf(req: Request, res: Response): Promise<void
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="caracalla-report-${id}.pdf"`);
     res.setHeader('Content-Length', pdfBuffer.length.toString());
+    recordEvent({ audit_id: id, event_type: 'premium_exported', actor_mode: 'owner', surface: 'web' });
     res.send(pdfBuffer);
   } catch (err) {
     console.error('PDF generation error:', err);

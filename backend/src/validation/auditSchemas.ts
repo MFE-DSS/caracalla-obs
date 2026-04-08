@@ -7,6 +7,7 @@ export const createAuditSchema = z.object({
   company_size_band: z.enum(SIZE_BANDS),
   industry_hint: z.string().min(2).max(200).transform((s) => s.trim()),
   pain_text: z.string().min(5).max(2000).transform((s) => s.trim()),
+  email: z.string().email().max(200).optional(),
 });
 
 export type CreateAuditInput = z.infer<typeof createAuditSchema>;

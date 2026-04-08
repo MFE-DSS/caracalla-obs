@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import { getDb } from '../db/client.js';
 import { computeEngine } from './engineAdapter.js';
+import { sendAuditCreatedEmail } from './emailService.js';
+import { recordEvent } from './eventService.js';
 import type { AuditRecord, AuditOutputRecord } from '../domain/audit.js';
 import type { CreateAuditInput } from '../validation/auditSchemas.js';
 import type { CreateAuditResponse } from '../domain/delivery.js';
@@ -12,9 +14,16 @@ export function createAudit(input: CreateAuditInput): CreateAuditResponse {
 
   // 1. Persist raw audit
   db.prepare(`
-    INSERT INTO audits (id, company_name, company_size_band, industry_hint, pain_text, status)
-    VALUES (?, ?, ?, ?, ?, 'draft')
-  `).run(auditId, input.company_name, input.company_size_band, input.industry_hint, input.pain_text);
+    INSERT INTO audits (id, company_name, company_size_band, industry_hint, pain_text, status, email)
+    VALUES (?, ?, ?, ?, ?, 'draft', ?)
+  `).run(
+    auditId,
+    input.company_name,
+    input.company_size_band,
+    input.industry_hint,
+    input.pain_text,
+    input.email ?? null,
+  );
 
   // 2. Run engine
   const engineOutput = computeEngine(input);
@@ -46,6 +55,15 @@ export function createAudit(input: CreateAuditInput): CreateAuditResponse {
 
   // 5. Update audit status
   db.prepare(`UPDATE audits SET status = 'computed', updated_at = datetime('now') WHERE id = ?`).run(auditId);
+
+  // 5b. Lifecycle events (observability)
+  recordEvent({ audit_id: auditId, event_type: 'audit_created', actor_mode: 'owner', surface: 'api' });
+  recordEvent({ audit_id: auditId, event_type: 'audit_computed', actor_mode: 'system', surface: 'api' });
+
+  // 6. Fire-and-forget transactional email (fail-soft: errors are swallowed inside the service).
+  if (input.email) {
+    void sendAuditCreatedEmail(input.email, auditId);
+  }
 
   return {
     audit_id: auditId,

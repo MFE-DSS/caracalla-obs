@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
 import { getAudit, markAsPaid } from './auditService.js';
 import { generateAccessToken, generateRefreshToken } from './accessTokenService.js';
+import { sendPaymentSuccessEmail } from './emailService.js';
+import { recordEvent } from './eventService.js';
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? '';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? '';
@@ -75,6 +77,11 @@ export function handleWebhookEvent(payload: Buffer, signature: string): { audit_
         const accessToken = generateAccessToken(auditId, 'premium_access');
         const refreshToken = generateRefreshToken(auditId, 'premium_access');
         markAsPaid(auditId, refreshToken);
+        recordEvent({ audit_id: auditId, event_type: 'payment_completed', surface: 'api', payload: { provider: 'stripe' } });
+        recordEvent({ audit_id: auditId, event_type: 'premium_unlocked', surface: 'api' });
+        if (audit.email) {
+          void sendPaymentSuccessEmail(audit.email, auditId, accessToken);
+        }
         return { audit_id: auditId, action: 'unlocked', access_token: accessToken, refresh_token: refreshToken };
       }
       return { audit_id: auditId, action: 'already_paid', refresh_token: audit?.access_token ?? undefined };
@@ -98,5 +105,10 @@ export function devUnlockPremium(auditId: string): { success: boolean; access_to
   const accessToken = generateAccessToken(auditId, 'premium_access');
   const refreshToken = generateRefreshToken(auditId, 'premium_access');
   markAsPaid(auditId, refreshToken);
+  recordEvent({ audit_id: auditId, event_type: 'payment_completed', surface: 'api', payload: { provider: 'dev_unlock' } });
+  recordEvent({ audit_id: auditId, event_type: 'premium_unlocked', surface: 'api' });
+  if (audit.email) {
+    void sendPaymentSuccessEmail(audit.email, auditId, accessToken);
+  }
   return { success: true, access_token: accessToken, refresh_token: refreshToken };
 }

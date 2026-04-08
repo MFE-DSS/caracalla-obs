@@ -9,6 +9,7 @@ export interface AuditRecord {
   status: 'draft' | 'computed' | 'error';
   paid: boolean;
   access_token: string | null;
+  email: string | null;
 }
 
 export interface AuditOutputRecord {

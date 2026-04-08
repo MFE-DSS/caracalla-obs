@@ -4,6 +4,8 @@ import auditsRouter from './routes/audits.js';
 import paymentsRouter from './routes/payments.js';
 import exportsRouter from './routes/exports.js';
 import authRouter from './routes/auth.js';
+import shareRouter from './routes/share.js';
+import timelineRouter from './routes/timeline.js';
 import { handleWebhook } from './controllers/paymentController.js';
 
 const app = express();
@@ -20,6 +22,8 @@ app.use('/api/audits', auditsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/audits', exportsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api', shareRouter);
+app.use('/api/audits', timelineRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

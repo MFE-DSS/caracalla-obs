@@ -4,6 +4,7 @@ import { createAudit, getAudit, getAuditOutput } from '../services/auditService.
 import { getSummary } from '../services/summaryService.js';
 import { getReport } from '../services/reportService.js';
 import { verifyAccessToken, generateAccessToken } from '../services/accessTokenService.js';
+import { recordEvent } from '../services/eventService.js';
 
 function extractToken(req: Request): string | null {
   const q = req.query.token;
@@ -67,6 +68,7 @@ export function handleGetSummary(req: Request, res: Response): void {
     return;
   }
 
+  recordEvent({ audit_id: id, event_type: 'summary_viewed', actor_mode: 'owner', surface: 'web' });
   res.json(summary);
 }
 
@@ -78,6 +80,8 @@ export function handleGetReport(req: Request, res: Response): void {
   if (token) {
     const payload = verifyAccessToken(token, 'premium_access', id);
     if (!payload) {
+      recordEvent({ audit_id: id, event_type: 'invalid_token_attempt', surface: 'api' });
+      recordEvent({ audit_id: id, event_type: 'report_access_denied', surface: 'api', payload: { reason: 'invalid_token' } });
       res.status(403).json({ error: 'invalid_token', message: 'Lien invalide ou expiré.' });
       return;
     }
@@ -90,15 +94,11 @@ export function handleGetReport(req: Request, res: Response): void {
       res.status(404).json({ error: 'not_found', message: 'Audit non trouvé.' });
       return;
     case 'locked':
-      // If no token provided and report is locked, return 402
-      if (!token) {
-        res.status(402).json(result.data);
-        return;
-      }
-      // Token was provided but report is locked — shouldn't happen if token is valid
+      recordEvent({ audit_id: id, event_type: 'report_access_denied', surface: 'api', payload: { reason: 'premium_locked' } });
       res.status(402).json(result.data);
       return;
     case 'ok':
+      recordEvent({ audit_id: id, event_type: 'premium_viewed', actor_mode: 'owner', surface: 'web' });
       res.json(result.data);
       return;
   }

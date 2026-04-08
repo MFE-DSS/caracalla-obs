@@ -7,6 +7,7 @@ import { BlockedItemsBoard } from '../components/BlockedItemsBoard';
 import { AdvisoryCTA } from '../components/AdvisoryCTA';
 import { ScoreBadge } from '../components/ScoreBadge';
 import { ExportReportButton } from '../components/ExportReportButton';
+import { ShareLinkPanel } from '../components/ShareLinkPanel';
 import { Footer } from '../components/Footer';
 import type { PremiumReportViewModel } from '../types/premiumReport';
 import type { EngineOutputV2 } from '../engine/domain/arbitration';
@@ -112,6 +113,14 @@ export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack }
           <section className="premium-report__section">
             <AdvisoryCTA block={premiumView.advisory_cta_block} onCtaClick={handleConseil} />
           </section>
+
+          {/* H. Share link panel (SHARE_MODE_01) */}
+          {auditId && (
+            <section className="premium-report__section">
+              <SectionHeader title="Partager ce rapport" subtitle="Lien de lecture seule, expiration et révocation" />
+              <ShareLinkPanel auditId={auditId} />
+            </section>
+          )}
 
         </div>
       </main>
