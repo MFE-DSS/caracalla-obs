@@ -33,7 +33,7 @@ beforeEach(() => {
 
 describe('ShareLinkPanel', () => {
   it('renders the create button and empty state', async () => {
-    global.fetch = mockFetch({
+    (globalThis as { fetch: typeof fetch }).fetch = mockFetch({
       '/share-links': () => ({ audit_id: 'aud_1', links: [] }),
     }) as unknown as typeof fetch;
 
@@ -46,7 +46,7 @@ describe('ShareLinkPanel', () => {
 
   it('creates a share link when the button is clicked', async () => {
     let listCalls = 0;
-    global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+    (globalThis as { fetch: typeof fetch }).fetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/share-links') && (!init || init.method !== 'POST')) {
         listCalls++;
         return { ok: true, status: 200, json: async () => ({ audit_id: 'aud_1', links: [] }) } as Response;
@@ -69,7 +69,7 @@ describe('ShareLinkPanel', () => {
   });
 
   it('revokes a link and removes it from the list', async () => {
-    global.fetch = vi.fn(async (url: string, init?: RequestInit) => {
+    (globalThis as { fetch: typeof fetch }).fetch = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/share-links') && (!init || init.method !== 'POST')) {
         return { ok: true, status: 200, json: async () => ({ audit_id: 'aud_1', links: [mockLink] }) } as Response;
       }
@@ -91,7 +91,7 @@ describe('ShareLinkPanel', () => {
   });
 
   it('copies the URL to clipboard when Copier is clicked', async () => {
-    global.fetch = vi.fn(async () =>
+    (globalThis as { fetch: typeof fetch }).fetch = vi.fn(async () =>
       ({ ok: true, status: 200, json: async () => ({ audit_id: 'aud_1', links: [mockLink] }) }) as Response,
     ) as unknown as typeof fetch;
 

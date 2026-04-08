@@ -5,6 +5,7 @@ import { SummaryPage } from './pages/SummaryPage';
 import { PremiumPage } from './pages/PremiumPage';
 import { PaymentSuccessPage } from './pages/PaymentSuccessPage';
 import { PaymentCancelPage } from './pages/PaymentCancelPage';
+import { SharedReportPage } from './pages/SharedReportPage';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/audit/:auditId/premium" element={<PremiumPage />} />
         <Route path="/payment/success" element={<PaymentSuccessPage />} />
         <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+        <Route path="/share/:token" element={<SharedReportPage />} />
       </Routes>
     </BrowserRouter>
   );

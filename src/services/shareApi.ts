@@ -56,3 +56,42 @@ export async function getSharedReport(token: string): Promise<unknown> {
   if (!res.ok) throw new Error(`Lien invalide (${res.status})`);
   return res.json();
 }
+
+// ── Typed fetcher for the shared report page ──────────
+
+import type { EngineOutputV2 } from '../engine/domain/arbitration';
+import type { PremiumReportViewModel } from '../types/premiumReport';
+
+export interface SharedReportPayload {
+  audit_id: string;
+  report: EngineOutputV2;
+  premium_view: PremiumReportViewModel;
+  shared: true;
+  scope: 'premium_read' | 'premium_read_export';
+  expires_at: string;
+}
+
+export type SharedReportResult =
+  | { status: 'ok'; data: SharedReportPayload }
+  | { status: 'not_found' }
+  | { status: 'expired' }
+  | { status: 'error' };
+
+/**
+ * Typed variant of getSharedReport for the shared report page.
+ * Maps HTTP status codes to explicit states so the UI can react without try/catch.
+ */
+export async function fetchSharedReport(token: string): Promise<SharedReportResult> {
+  try {
+    const res = await fetch(`${API_BASE}/api/share/${token}`);
+    if (res.ok) {
+      const data = (await res.json()) as SharedReportPayload;
+      return { status: 'ok', data };
+    }
+    if (res.status === 404) return { status: 'not_found' };
+    if (res.status === 403) return { status: 'expired' };
+    return { status: 'error' };
+  } catch {
+    return { status: 'error' };
+  }
+}

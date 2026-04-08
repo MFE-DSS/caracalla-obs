@@ -14,20 +14,25 @@ import type { EngineOutputV2 } from '../engine/domain/arbitration';
 import { track } from '../analytics';
 import './PremiumReportPage.css';
 
+export type PremiumReportMode = 'owner' | 'shared';
+
 interface Props {
   premiumView: PremiumReportViewModel;
   engineOutput: EngineOutputV2;
   auditId?: string;
-  onBack: () => void;
+  onBack?: () => void;
+  mode?: PremiumReportMode;
 }
 
-export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack }: Props) {
+export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack, mode = 'owner' }: Props) {
+  const isShared = mode === 'shared';
+
   useEffect(() => {
     track('report_viewed' as any);
   }, []);
 
   const handleConseil = () => {
-    track('consulting_cta_clicked', { source: 'premium_report' });
+    track('consulting_cta_clicked', { source: isShared ? 'shared_report' : 'premium_report' });
     alert('Prise de rendez-vous à venir. Merci de votre intérêt !');
   };
 
@@ -35,10 +40,21 @@ export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack }
     <div className="premium-report">
       <header className="premium-report__header">
         <div className="premium-report__container">
-          <button className="premium-report__back" onClick={onBack} type="button">← Retour</button>
+          {isShared ? (
+            <div className="premium-report__shared-intro">
+              <span className="premium-report__shared-title">Rapport partagé</span>
+              <span className="premium-report__shared-sub">Vous consultez un audit partagé</span>
+            </div>
+          ) : (
+            onBack && (
+              <button className="premium-report__back" onClick={onBack} type="button">← Retour</button>
+            )
+          )}
           <div className="premium-report__header-actions">
-            <span className="premium-report__badge">Rapport premium</span>
-            {auditId && <ExportReportButton auditId={auditId} />}
+            <span className="premium-report__badge">
+              {isShared ? 'Lecture seule' : 'Rapport premium'}
+            </span>
+            {!isShared && auditId && <ExportReportButton auditId={auditId} />}
           </div>
         </div>
       </header>
@@ -114,8 +130,8 @@ export function PremiumReportPage({ premiumView, engineOutput, auditId, onBack }
             <AdvisoryCTA block={premiumView.advisory_cta_block} onCtaClick={handleConseil} />
           </section>
 
-          {/* H. Share link panel (SHARE_MODE_01) */}
-          {auditId && (
+          {/* H. Share link panel (SHARE_MODE_01) — owner only */}
+          {!isShared && auditId && (
             <section className="premium-report__section">
               <SectionHeader title="Partager ce rapport" subtitle="Lien de lecture seule, expiration et révocation" />
               <ShareLinkPanel auditId={auditId} />

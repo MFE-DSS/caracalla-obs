@@ -22,6 +22,25 @@
   gap: var(--space-3);
 }
 
+.premium-report__shared-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.premium-report__shared-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.premium-report__shared-sub {
+  font-size: var(--text-xs);
+  color: var(--gray-600);
+}
+
 .premium-report__back {
   background: none;
   border: none;
